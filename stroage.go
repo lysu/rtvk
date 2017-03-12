@@ -10,9 +10,9 @@ import (
 )
 
 type Storage struct {
-	proposeC chan<- string
-	mu sync.RWMutex
-	strore map[string]string
+	proposeC    chan<- string
+	mu          sync.RWMutex
+	store       map[string]string
 	snapshotter *snap.Snapshotter
 }
 
@@ -22,7 +22,7 @@ type entry struct {
 }
 
 func NewKVStore(snapshotter *snap.Snapshotter, proposeC chan<- string, commitC <-chan *string, errorC <-chan error) *Storage {
-	s := &Storage{proposeC: proposeC, strore:make(map[string]string), snapshotter:snapshotter}
+	s := &Storage{proposeC: proposeC, store: make(map[string]string), snapshotter: snapshotter}
 	return s;
 }
 
@@ -48,7 +48,7 @@ func (s *Storage) readCommits(commitC <-chan *string, errorC <-chan error) {
 			log.Fatalf("raftexample: could not decode message (%v)", err)
 		}
 		s.mu.Lock()
-		s.strore[dataEntry.Key] = dataEntry.Value
+		s.store[dataEntry.Key] = dataEntry.Value
 		s.mu.Unlock()
 	}
 	if err, ok := <-errorC; ok {
@@ -62,7 +62,7 @@ func (s *Storage) recoverFromSnapshot(snapshot []byte) error {
 		return err
 	}
 	s.mu.Lock()
-	s.strore = store
+	s.store = store
 	s.mu.Unlock()
 	return nil
 }
@@ -70,7 +70,7 @@ func (s *Storage) recoverFromSnapshot(snapshot []byte) error {
 func (s *Storage) GetSnapshot() ([]byte, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return json.Marshal(s.strore)
+	return json.Marshal(s.store)
 }
 
 func (s *Storage) Propose(k string, v string) {
@@ -83,7 +83,7 @@ func (s *Storage) Propose(k string, v string) {
 
 func (s *Storage) Lookup(key string) (string, bool) {
 	s.mu.RLock()
-	v, ok := s.strore[key]
+	v, ok := s.store[key]
 	s.mu.RUnlock()
 	return v, ok
 }
